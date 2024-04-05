@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  # Base image containing dependencies.
+  base:
+    image: spir:base
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        ROS_DISTRO: humble
+      target: base
+    # Interactive shell
+    stdin_open: true
+    tty: true
+    # Networking and IPC for ROS
+    network_mode: host
+    ipc: host
+    # Needed to display graphical applications
+    privileged: True
+    environment:
+      # Allows graphical programs in the container.
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      # Allows graphical programs in the container.
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Mount the proper location for X11 server if you are running this in WSL
+      # - /mnt/wslg/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority

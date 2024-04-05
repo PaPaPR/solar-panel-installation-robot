@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  # Developer container
+  dev:
+    container_name: spir-dev
+    extends:
+      file: ./docker-compose.overlay.yml
+      service: overlay
+    image: spir:dev
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      target: dev
+      args:
+        - UID=${UID:-1000}
+        - GID=${UID:-1000}
+        - USERNAME=${USERNAME:-devuser}
+    environment:
+      # Set specific display for X11
+      - DISPLAY=:1
+    volumes:
+      - ./.vscode:/overlay_ws/.vscode/:rw
+      # Mount catkin build artifacts for faster rebuilds
+      - ../build:/overlay_ws/build/:rw
+      - ../install:/overlay_ws/install/:rw
+      # Mount Source code
+      - ../src:/overlay_ws/src/:rw
+      # Mount devices
+      - /dev/mindvision:/dev/mindvision:rw
+    user: ${USERNAME:-devuser}
+    command: sleep infinity
+
+  # Run foxglove bridge
+  # foxglove_bridge:
+  #   container_name: spir_foxglove_bridge
+  #   extends:
+  #     file: ./docker-compose.overlay.yml
+  #     service: overlay
+  #   command: ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
+  #   restart: always

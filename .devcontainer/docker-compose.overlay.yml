@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  # Overlay image containing the example source code.
+  overlay:
+    extends:
+      file: ./docker-compose.base.yml
+      service: base
+    image: spir:overlay
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      target: overlay
