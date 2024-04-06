@@ -1,0 +1,6 @@
+[submodule "src/apriltag_ros"]
+	path = src/apriltag_ros
+	url = https://github.com/christianrauch/apriltag_ros
+[submodule "src/ros2_mindvision_camera"]
+	path = src/ros2_mindvision_camera
+	url = https://github.com/chenjunnn/ros2_mindvision_camera
