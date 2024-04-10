@@ -3,7 +3,7 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="solar_panel_installation_robot">
+  name="spir_description">
   <link
     name="base_link">
     <inertial>
@@ -111,7 +111,7 @@
       <mass
         value="1161.6695731136" />
       <inertia
-        ixx="754.75701027965"
+        ixx="754.757010279649"
         ixy="57.9272256461836"
         ixz="-497.669268719649"
         iyy="1352.7304511101"
@@ -146,7 +146,7 @@
     name="axis-1"
     type="revolute">
     <origin
-      xyz="0.400000000000002 0.1345 0.322999999999998"
+      xyz="0.4 0.1345 0.323"
       rpy="0 0 0" />
     <parent
       link="Link_1" />
@@ -169,7 +169,7 @@
       <mass
         value="1161.6695731136" />
       <inertia
-        ixx="754.75701027965"
+        ixx="754.757010279649"
         ixy="57.9272256461836"
         ixz="-497.669268719649"
         iyy="1352.7304511101"
@@ -204,7 +204,7 @@
     name="axis-2"
     type="revolute">
     <origin
-      xyz="0 -0.00100000000000011 1.20000000000002"
+      xyz="0 -0.001 1.2"
       rpy="0 0 0" />
     <parent
       link="Link_2" />
@@ -262,14 +262,14 @@
     name="axis-3"
     type="revolute">
     <origin
-      xyz="0.39453 -0.26 0.25011"
+      xyz="0.394532403355045 -0.259999999999995 0.250106662651998"
       rpy="0 0 0" />
     <parent
       link="Link_3" />
     <child
       link="Link_4" />
     <axis
-      xyz="-1 0 -0.00027033" />
+      xyz="-0.99999996346114 0 -0.000270328906909661" />
     <limit
       lower="-3.1415"
       upper="3.1415"
@@ -285,7 +285,7 @@
       <mass
         value="1161.6695731136" />
       <inertia
-        ixx="754.75701027965"
+        ixx="754.757010279649"
         ixy="57.9272256461836"
         ixz="-497.669268719649"
         iyy="1352.7304511101"
@@ -338,16 +338,16 @@
     name="Link_6">
     <inertial>
       <origin
-        xyz="0.210890556634789 -0.00845239883053628 0.0149766824619597"
+        xyz="0.210890556634793 -0.00845239883053583 0.014976682461961"
         rpy="0 0 0" />
       <mass
         value="44.7597449842918" />
       <inertia
         ixx="12.6343269644531"
-        ixy="3.08204339707178E-05"
+        ixy="3.08204339707176E-05"
         ixz="-0.0230093907202383"
         iyy="9.98632078269346"
-        iyz="7.80279190266377E-06"
+        iyz="7.80279190249206E-06"
         izz="2.7081397351032" />
     </inertial>
     <visual>
@@ -391,35 +391,5 @@
       upper="3.1415"
       effort="10"
       velocity="10" />
-  </joint>
-  <link
-    name="camera_optical_frame">
-    <inertial>
-      <origin
-        xyz="-0.849173448973032 1.16227552217461 -2.15102494035099"
-        rpy="0 0 0" />
-      <mass
-        value="1161.6695731136" />
-      <inertia
-        ixx="1352.7304511101"
-        ixy="36.0326047225112"
-        ixz="-57.9369684177753"
-        iyy="670.758679708012"
-        iyz="497.691975897366"
-        izz="754.487935352575" />
-    </inertial>
-  </link>
-  <joint
-    name="Joint_camera"
-    type="fixed">
-    <origin
-      xyz="0.2444 -0.715 0.0050661"
-      rpy="-1.5705 0 -1.5708" />
-    <parent
-      link="Link_6" />
-    <child
-      link="camera_optical_frame" />
-    <axis
-      xyz="0 0 0" />
   </joint>
 </robot>

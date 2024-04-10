@@ -7,7 +7,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     urdf_pkg_share = FindPackageShare('spir_description').find('spir_description')
-    urdf_file = os.path.join(urdf_pkg_share, 'urdf', 'solar_panel_installation_robot.urdf')
+    urdf_file = os.path.join(urdf_pkg_share, 'urdf', 'spir_description.urdf')
     robot_desc = open(urdf_file).read()
     return LaunchDescription([
         Node(
@@ -15,11 +15,5 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             parameters=[{'robot_description': robot_desc}]
-        ),
-        # Node(
-        #     package='joint_state_publisher_gui',
-        #     executable='joint_state_publisher_gui',
-        #     name='joint_state_publisher_gui'
-        # ),
-
+        )
     ])
