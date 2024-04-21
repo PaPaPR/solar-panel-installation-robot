@@ -23,18 +23,15 @@ class StatePublisher(Node):
 
         self.hostname = self.get_parameter('hostname').get_parameter_value().string_value
         self.hostport = self.get_parameter('hostport').get_parameter_value().integer_value
-        self.recvhost = ''
-        self.recvport = self.get_parameter('recvport').get_parameter_value().integer_value
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.sock_lock = threading.Lock()
 
         self.receiveThread = threading.Thread(target = self.state_receive)
         self.receiveThread.start()
-        self.feedbackThread = threading.Thread(target = self.command_feedback)
-        self.feedbackThread.start()
-        
 
     def state_receive(self):
         initialized = False
@@ -42,9 +39,9 @@ class StatePublisher(Node):
             try:
                 self.sendSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sendSock.connect((self.hostname, self.hostport))
-                self.timer = self.create_timer(0.1, self.state_inquiry)
+                self.timer = self.create_timer(0.02, self.state_inquiry)
                 initialized = True
-                self.get_logger().debug(f'Connect to {self.hostname}:{self.hostport} succeed.')
+                self.get_logger().info(f'Connect to {self.hostname}:{self.hostport} succeed.')
             except Exception as e:
                 self.get_logger().error(f'Send initialization failed with error: {e}, Connect to {self.hostname}:{self.hostport} failed! Retrying...')
                 time.sleep(5)
@@ -63,7 +60,39 @@ class StatePublisher(Node):
                     try:
                         json_data = json.loads(data.decode('utf-8'))
                         data = b''
-                        self.robot_state_publish(json_data)
+                        # Handle request of target position
+                        if json_data['dsID'] == 'www.hc-system.com.cam':
+                            if json_data['reqType'] == 'photo':
+                                json_data['ret'] = 1
+                                self.get_logger().info('Received request of destination')
+                                # lookup word coordinate of installing position
+                                tf_lookup_times = 0
+                                while tf_lookup_times < 5:
+                                    try:
+                                        tf_trans = self.tf_buffer.lookup_transform('end_effector', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                                        if(abs(tf_trans.transform.translation.x) < 0.15 and abs(tf_trans.transform.translation.y) < 0.15 and abs(tf_trans.transform.translation.z) < 0.15):
+                                            tf_trans = self.tf_buffer.lookup_transform('base_link', 'installation', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                                            # tf_trans = self.tf_buffer.lookup_transform('base_link', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                                        else:
+                                            tf_trans = self.tf_buffer.lookup_transform('base_link', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                                        with self.sock_lock:
+                                            time.sleep(0.01)
+                                            s = b'{"dsID":"w5ww.hc-system.com.cam", "reqType":"photo","camID":0,"ret":1}'
+                                            self.sendSock.sendall(s)
+                                            # self.sendSock.sendall(json.dumps(json_data).encode('utf-8'))
+                                            self.get_logger().info(f'Responded request of destination with: {json.dumps(json_data)}')
+                                            time.sleep(0.01)
+                                        translation = [tf_trans.transform.translation.x, tf_trans.transform.translation.y, tf_trans.transform.translation.z]
+                                        rotation = euler_from_quaternion(tf_trans.transform.rotation)
+                                        with self.sock_lock:
+                                            self.robot_target_send(translation, rotation)
+                                        tf_lookup_times = 5
+                                    except tf2_ros.TransformException as e:
+                                        self.get_logger().error(f'Could not transform : {e}')
+                                        tf_lookup_times = tf_lookup_times + 1
+                        # Handle information of robot state
+                        elif json_data['dsID'] == 'www.hc-system.com.RemoteMonitor':
+                            self.robot_state_publish(json_data)
                     except json.JSONDecodeError:
                         continue
             except:
@@ -81,59 +110,6 @@ class StatePublisher(Node):
             except Exception as e:
                 self.get_logger().error(f'Send inquiry failed with error: {e}, Send to {self.hostname}:{self.hostport} failed! Retrying...')
                 time.sleep(5)
-
-    def command_feedback(self):
-        initialized = False
-        while not initialized:
-            try:
-                self.recvSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.recvSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                self.recvSock.bind((self.recvhost, self.recvport))
-                self.recvSock.listen(10)
-                self.recvConn, addr = self.recvSock.accept()
-                initialized = True
-                self.get_logger().debug(f'Bind to {self.recvhost}:{self.recvport} succeed.')
-            except OSError as e:
-                self.get_logger().error(f'Recive initialization failed with error: {e}, Bind to {self.recvhost}:{self.recvport} failed!')
-                time.sleep(5)
-        BUFF_SIZE = 4096
-        data = b''
-        while True:
-            try:
-                chunk = self.recvConn.recv(BUFF_SIZE)
-                if not chunk:
-                    continue
-                if len(chunk) % BUFF_SIZE == 0:
-                    data += chunk
-                else:
-                    data = chunk
-                    json_data = json.loads(data.decode('utf-8'))
-                    data = b''
-                    # camera state feedback
-                    if json_data['reqType'] == 'photo':
-                        json_data['ret'] = 1
-                        self.get_logger().debug('Received request of destination')
-                        # lookup word coordinate of installing position
-                        self.tf_buffer = tf2_ros.Buffer()
-                        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-                        tag_frame = 'installation'
-                        try:
-                            tf_trans = self.tf_buffer.lookup_transform('base_link', tag_frame, rclpy.time.Time(), rclpy.duration.Duration(seconds=3))
-                            with self.sock_lock:
-                                time.sleep(0.01)
-                                self.sendSock.sendall(json.dumps(json_data).encode())
-                                self.get_logger().debug(f'Responded request of destination with: {json.dumps(json_data)}')
-                                time.sleep(0.01)
-                            translation = [tf_trans.transform.translation.x, tf_trans.transform.translation.y, tf_trans.transform.translation.z]
-                            rotation = euler_from_quaternion(tf_trans.transform.rotation)
-                            with self.sock_lock:
-                                self.robot_target_send(translation, rotation)
-                        except tf2_ros.TransformException as e:
-                            self.get_logger().error(f'Could not transform : {e}')
-                            continue
-            except Exception as e:
-                self.get_logger().error(f'Feedback failed with error: {e}')
-                continue
 
     def robot_state_publish(self, json_data):
         query_addr = json_data['queryAddr']
@@ -154,18 +130,17 @@ class StatePublisher(Node):
         self.tf_publish_world(tf_baselink2endeffertor)
 
     def robot_target_send(self, translation, rotation):
-        json_data = json.loads('{"dsID":"www.hc-system.com.cam", "reqTyTypype":"AddPoints", "dsData":[{"camID":"0", "data":[{"ModelID":"0","Similarity":"0","Color":"0","Rel":"0"}]}]}')
-        json_data['dsData'][0]['data'][0]['X'] = translation[0]
-        json_data['dsData'][0]['data'][0]['Y'] = translation[1]
-        json_data['dsData'][0]['data'][0]['Z'] = translation[2]
-        json_data['dsData'][0]['data'][0]['U'] = rotation[0]
-        json_data['dsData'][0]['data'][0]['V'] = rotation[1]
-        json_data['dsData'][0]['data'][0]['Angel'] = rotation[2]
-        # todo: 对接数值大小、正负变化
+        json_data = json.loads('{"dsID":"www.hc-system.com.cam", "reqType":"AddPoints", "dsData":[{"camID":"0", "data":[{"ModelID":"0","Similarity":"0","Color":"0","Rel":"0"}]}]}')
+        json_data['dsData'][0]['data'][0]['X'] = str(translation[0] * 1000.)
+        json_data['dsData'][0]['data'][0]['Y'] = str(translation[1] * 1000.)
+        json_data['dsData'][0]['data'][0]['Z'] = str(translation[2] * 1000.)
+        json_data['dsData'][0]['data'][0]['U'] = str(rotation[0] * 180. / math.pi)
+        json_data['dsData'][0]['data'][0]['V'] = str(rotation[1] * 180. / math.pi)
+        json_data['dsData'][0]['data'][0]['Angel'] = str(rotation[2] * 180. / math.pi)
         time.sleep(0.01)
-        self.sendSock.sendall(json.dumps(json_data).encode())
-        self.get_logger().debug(f'Feedback of destination: {json.dumps(json_data)}')
+        self.sendSock.sendall(bytes(json.dumps(json_data,ensure_ascii=True),"ascii"))
         time.sleep(0.01)
+        self.get_logger().info(f'Feedback of destination: {json.dumps(json_data)}')
 
     def tf_publish_world(self, transform):
         t = tf2_ros.TransformStamped()
