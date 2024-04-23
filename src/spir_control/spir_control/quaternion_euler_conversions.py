@@ -2,15 +2,7 @@ import numpy as np
 import math
 
 def euler_from_quaternion(quaternion):
-    """
-    Converts quaternion (w in last place) to euler roll, pitch, yaw
-    quaternion = [x, y, z, w]
-    Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
-    """
-    x = quaternion.x
-    y = quaternion.y
-    z = quaternion.z
-    w = quaternion.w
+    x, y, z, w = quaternion
 
     sinr_cosp = 2 * (w * x + y * z)
     cosr_cosp = 1 - 2 * (x * x + y * y)
@@ -25,7 +17,8 @@ def euler_from_quaternion(quaternion):
 
     return [roll, pitch, yaw]
 
-def quaternion_from_euler(ai, aj, ak):
+def quaternion_from_euler(euler):
+    ai, aj, ak = euler
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -40,10 +33,4 @@ def quaternion_from_euler(ai, aj, ak):
     sc = si*ck
     ss = si*sk
 
-    q = np.empty((4, ))
-    q[0] = cj*sc - sj*cs
-    q[1] = cj*ss + sj*cc
-    q[2] = cj*cs - sj*sc
-    q[3] = cj*cc + sj*ss
-
-    return q
+    return [cj*sc - sj*cs, cj*ss + sj*cc, cj*cs - sj*sc, cj*cc + sj*ss]

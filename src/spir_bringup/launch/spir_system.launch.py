@@ -5,12 +5,18 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.launch_description_sources import AnyLaunchDescriptionSource
 
 def generate_launch_description():
     camera_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(
+        AnyLaunchDescriptionSource([os.path.join(
             get_package_share_directory('spir_bringup'), 'launch'),
             '/mv_camera.launch.py'])
+        )
+    apriltag_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('spir_bringup'), 'launch'),
+            '/apriltag.launch.py'])
         )
     static_tf_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
@@ -29,6 +35,7 @@ def generate_launch_description():
         )
     return LaunchDescription([
         camera_node,
+        apriltag_node,
         static_tf_node,
         spir_control_node,
         robot_state_node,
