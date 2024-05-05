@@ -4,14 +4,13 @@ ARG ROS_DISTRO=humble
 ##############
 # Base Image #
 ##############
-FROM osrf/ros:humble-desktop-full as base
+FROM osrf/ros:${ROS_DISTRO}-desktop-full as base
 ENV ROS_DISTRO=${ROS_DISTRO}
 SHELL ["/bin/bash", "-c"]
 
 # Install basic apt packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  git ros-${ROS_DISTRO}-foxglove-bridge \
-  python-is-python3 ros-humble-joint-state-publisher-gui \
+  git python-is-python3 wget unzip \
   && rm -rf /var/lib/apt/lists/*
 
 # Create workspace with external dependencies
@@ -71,7 +70,9 @@ ARG GID=${UID}
 
 # Install extra tools for development
 RUN apt-get update && apt-get install -y --no-install-recommends \
- gdb gdbserver nano
+  gdb gdbserver nano \
+  ros-${ROS_DISTRO}-joint-state-publisher-gui \
+  ros-${ROS_DISTRO}-foxglove-bridge
 
 # Create new user and home directory
 RUN groupadd --gid $GID $USERNAME \

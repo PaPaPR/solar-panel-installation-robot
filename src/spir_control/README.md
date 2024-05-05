@@ -1,3 +1,8 @@
+# tcpdump 抓取数据
+```shell
+sudo tcpdump -i enp4s0 host 192.168.4.4 and port 9760 -A | grep '"reqType":"photo"'
+```
+
 # 信息发送与返回示例
 ## 获取机械臂信息
 ```json

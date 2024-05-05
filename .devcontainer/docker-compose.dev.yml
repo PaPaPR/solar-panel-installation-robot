@@ -15,6 +15,7 @@ services:
         - UID=${UID:-1000}
         - GID=${UID:-1000}
         - USERNAME=${USERNAME:-devuser}
+        - ROS_DISTRO=humble
     environment:
       # Set specific display for X11
       - DISPLAY=:1
@@ -26,7 +27,8 @@ services:
       # Mount Source code
       - ../src:/overlay_ws/src/:rw
       # Mount devices
-      - /dev/mindvision:/dev/mindvision:rw
+    devices:
+      - /dev:/dev
     user: ${USERNAME:-devuser}
     command: sleep infinity
 
