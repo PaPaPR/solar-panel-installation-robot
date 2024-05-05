@@ -38,6 +38,7 @@ class StatePublisher(Node):
             if self.arm.command('photo'):
                 time.sleep(0.01)
                 self.arm.command('photo_reply')
+                self.get_logger().info('Recived request of installating position.')
                 tf_trans = None
                 retry_times = 0
                 while retry_times < 3:
@@ -52,10 +53,11 @@ class StatePublisher(Node):
                             tf_trans = self.tf_buffer.lookup_transform('end_effector', 'installation', rclpy.time.Time(), rclpy.duration.Duration(seconds=5))
                         except tf2_ros.TransformException as e:
                             retry_times += 1
-                            self.get_logger().error(f'Could not lookup end_effector to installation transform : {e}')
+                            self.get_logger().error(f'Could not lookup base_link to installation_calibration transform : {e}')
                 if tf_trans is not None:
                     self.arm.command('add_points', [[tf_trans.transform.translation.x, tf_trans.transform.translation.y, tf_trans.transform.translation.z],\
                                                     [tf_trans.transform.rotation.x, tf_trans.transform.rotation.y, tf_trans.transform.rotation.z, tf_trans.transform.rotation.w]])
+                    self.get_logger().info('Sended position of installating.')
                 else:
                     self.get_logger().error('Tf translation is none when command is sending.')
 
@@ -86,6 +88,7 @@ class StatePublisher(Node):
     def arm_comm_retry(self):
         while not self.arm.isAvailable():
             self.arm.init()
+            self.get_logger().info(f'Arm interface reiniciating.')
 
 def main(args=None):
     rclpy.init(args=args)
