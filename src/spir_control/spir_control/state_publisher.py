@@ -1,4 +1,5 @@
 import threading
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -28,12 +29,14 @@ class StatePublisher(Node):
         self.cmd_feedback_thread = threading.Thread(target = self.cmd_feedback)
         self.cmd_feedback_thread.start()
 
-        self.state_query_timer = self.create_timer(0.1, self.state_query)
+        self.state_feedback_thread = threading.Thread(target = self.state_query)
+        self.state_feedback_thread.start()
 
     def cmd_feedback(self):
         while True:
             # 接收到拍照指令
             if self.arm.command('photo'):
+                time.sleep(0.01)
                 self.arm.command('photo_reply')
                 tf_trans = None
                 retry_times = 0
@@ -59,6 +62,7 @@ class StatePublisher(Node):
     def state_query(self):
         while self.arm.isAvailable():
             state = self.arm.command('joint_state')
+            time.sleep(0.5)
             if state is not None:
                 joint_state = JointState()
                 joint_state.header.stamp = self.get_clock().now().to_msg()
