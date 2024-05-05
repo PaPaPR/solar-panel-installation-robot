@@ -16,9 +16,9 @@ def generate_launch_description():
             name='robot_state_publisher',
             parameters=[{'robot_description': robot_desc}]
         ),
-        Node(
-            package='joint_state_publisher',
-            executable='joint_state_publisher',
-            name='joint_state_publisher'
-        ),
+        # Node(
+        #     package='joint_state_publisher',
+        #     executable='joint_state_publisher',
+        #     name='joint_state_publisher'
+        # ),
     ])
