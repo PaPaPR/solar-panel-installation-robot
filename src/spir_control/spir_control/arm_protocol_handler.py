@@ -24,6 +24,7 @@ class ArmProtocolHandler():
                     '"world-0","world-1","world-2","world-3","world-4","world-5"]}'
         self.command_dict['joint_state_cmd'] = '{"dsID":"www.hc-system.com.cam", "reqType":"AddPoints", ' + \
                     '"dsData":[{"camID":"0", "data":[{"ModelID":"0","Similarity":"0","Color":"0","Rel":"0"}]}]}'
+        self.command_dict['photo_reply']  = '{"dsID":"www.hc-system.com.cam", "reqType":"photo","camID":0,"ret":1}'
         self.msg_queue = {}
         self.msg_queue['joint_state'] = queue.Queue()
         self.msg_queue['photo'] = queue.Queue()
@@ -45,7 +46,6 @@ class ArmProtocolHandler():
         self.sendThread = threading.Thread(target = self.send)
         self.sendThread.start()
 
-
     def isAvailable(self) -> bool:
         return self.initialized
 
@@ -66,7 +66,7 @@ class ArmProtocolHandler():
                         if json_data['dsID'] == 'www.hc-system.com.cam':
                             if json_data['reqType'] == 'photo':
                                 json_data['ret'] = 1
-                                self.command_dict['photo_reply'] = json.dumps(json_data, ensure_ascii=True)
+                                # self.command_dict['photo_reply'] = json.dumps(json_data, ensure_ascii=True)
                                 self.msg_queue['photo'].put(True)
                         # Handle information of robot state
                         elif json_data['dsID'] == 'www.hc-system.com.RemoteMonitor':
@@ -87,7 +87,7 @@ class ArmProtocolHandler():
                 self.sock.sendall(bytes(send_data, 'ascii'))
             except socket.error as e:
                 self.initialized = False
-            time.sleep(0.01)
+            time.sleep(0.02)
 
     # 命令
     # todo:超时以及出错清空，queue数量限制
@@ -111,18 +111,20 @@ class ArmProtocolHandler():
             # todo:指令发送成功反馈确认以及失败重发送
             translation, rotation = value # rotation 为四元数组成的 list
             rpy = quaternion_euler_conversions.euler_from_quaternion(rotation)
-            json_data = self.resolve_add_points(translation, rpy)
-            self.send_queue.put(json.dumps(json_data, ensure_ascii=True))
+            cmd = self.resolve_add_points(translation, rpy)
+            self.send_queue.put(cmd)
 
     def resolve_add_points(self, translation:list, rotation:list):
-        json_data = self.command_dict['joint_state_cmd']
+        cmd_str = self.command_dict['joint_state_cmd']
+        json_data = json.loads(cmd_str)
         json_data['dsData'][0]['data'][0]['X'] = str(translation[0] * 1000.)
         json_data['dsData'][0]['data'][0]['Y'] = str(translation[1] * 1000.)
         json_data['dsData'][0]['data'][0]['Z'] = str(translation[2] * 1000.)
         json_data['dsData'][0]['data'][0]['U'] = str(rotation[0] * 180. / math.pi)
         json_data['dsData'][0]['data'][0]['V'] = str(rotation[1] * 180. / math.pi)
         json_data['dsData'][0]['data'][0]['Angel'] = str(rotation[2] * 180. / math.pi)
-        return json_data
+        cmd_str = json.dumps(json_data, ensure_ascii=True)
+        return cmd_str
 
     def resolve_arm_state(self, json_data):
         query_addr = json_data['queryAddr']
