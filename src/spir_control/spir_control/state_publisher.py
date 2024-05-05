@@ -41,16 +41,23 @@ class StatePublisher(Node):
                 self.get_logger().info('Recived request of installating position.')
                 tf_trans = None
                 retry_times = 0
-                while retry_times < 3:
+                while retry_times < 5:
                     try:
-                        tf_trans = self.tf_buffer.lookup_transform('end_effector', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=5))
-                        retry_times = 3
+                        tf_trans = self.tf_buffer.lookup_transform('end_effector', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
                     except tf2_ros.TransformException as e:
                         retry_times += 1
                         self.get_logger().error(f'Could not lookup end_effector to installation_calibration transform : {e}')
                     if(tf_trans is not None and abs(tf_trans.transform.translation.x) < 0.1 and abs(tf_trans.transform.translation.y) < 0.1 and abs(tf_trans.transform.translation.z) < 0.1):
                         try:
-                            tf_trans = self.tf_buffer.lookup_transform('end_effector', 'installation', rclpy.time.Time(), rclpy.duration.Duration(seconds=5))
+                            tf_trans = self.tf_buffer.lookup_transform('base_link', 'installation', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                            retry_times = 5
+                        except tf2_ros.TransformException as e:
+                            retry_times += 1
+                            self.get_logger().error(f'Could not lookup base_link to installation transform : {e}')
+                    else:
+                        try:
+                            tf_trans = self.tf_buffer.lookup_transform('base_link', 'installation_calibration', rclpy.time.Time(), rclpy.duration.Duration(seconds=1))
+                            retry_times = 5
                         except tf2_ros.TransformException as e:
                             retry_times += 1
                             self.get_logger().error(f'Could not lookup base_link to installation_calibration transform : {e}')
